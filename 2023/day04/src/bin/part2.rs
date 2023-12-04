@@ -1,6 +1,9 @@
 use regex::Regex;
+use std::time::Instant;
 
 fn main() {
+    let now = Instant::now();
+
     let input = include_str!("../../input.txt");
     // let input = include_str!("../../input_test.txt");
     println!("{input}\n");
@@ -45,4 +48,7 @@ fn main() {
 
     let total_card_count: u32 = card_counts.iter().sum();
     println!("{total_card_count}");
+    
+    let elapsed = now.elapsed();
+    println!("Elapsed: {:.2?}", elapsed);
 }
