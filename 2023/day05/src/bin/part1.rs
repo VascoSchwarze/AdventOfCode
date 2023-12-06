@@ -17,6 +17,7 @@ impl RangeMapping {
 }
 
 fn main() {
+    // At the end of the input, two blank lines are required for this solution to work.
     let input = include_str!("../../input.txt");
     // let input = include_str!("../../input_test.txt");
     println!("{input}\n");
@@ -36,10 +37,7 @@ fn main() {
         if (0..=2).contains(&line_nr) || line.contains("map") {
             continue;
         }
-        if line.len() == 0 {
-            // println!("{line_nr}");
-            // dbg!(&seeds);
-            // dbg!(&range_mappings);
+        if line.is_empty() {
             for seed in &seeds {
                 let mut mapped = false;
                 for range in &range_mappings {
@@ -53,7 +51,7 @@ fn main() {
                     }
                 }
                 if !mapped {
-                    target_nums.push(seed.clone());
+                    target_nums.push(*seed);
                 }
             }
             seeds = target_nums.clone();
