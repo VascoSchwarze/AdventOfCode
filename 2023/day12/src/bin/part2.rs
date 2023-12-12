@@ -1,56 +1,77 @@
+use memoize::memoize;
+
 fn main() {
-    // let input = include_str!("../../input.txt");
-    let input = include_str!("../../input_test.txt");
+    let input = include_str!("../../input.txt");
+    // let input = include_str!("../../input_test.txt");
     println!("{input}\n");
 
     let result: u64 = input
         .lines()
         .map(|line| line.split_once(' ').unwrap())
         .map(|(springs, groups)| {
-            // let mut new_springs = String::from(springs);
-            // for _ in 0..4 {
-            //     new_springs = new_springs + "?" + springs;
-            // }
-            // println!("{new_springs}");
-            dbg!("Checking next row ");
-            let r = count_possible_arrangements(
-                // &new_springs.chars().collect::<Vec<char>>(),
-                &springs.chars().collect::<Vec<char>>(),
-                &groups
+            let mut new_springs = String::from(springs);
+            for _ in 0..4 {
+                new_springs = new_springs + "?" + springs;
+            }
+            let mut new_groups = String::from(groups);
+            for _ in 0..4 {
+                new_groups = new_groups + "," + groups;
+            }
+            count_possible_arrangements(
+                new_springs.chars().collect::<Vec<char>>(),
+                new_groups
                     .split(',')
                     .map(|v| v.parse::<u32>().unwrap())
                     .collect::<Vec<u32>>(),
-            );
-            dbg!(r);
-            r
+            )
         })
         .sum();
 
     println!("{result}");
 }
 
-fn count_possible_arrangements(springs: &[char], groups: &[u32]) -> u64 {
+#[memoize]
+fn count_possible_arrangements(springs: Vec<char>, groups: Vec<u32>) -> u64 {
     let min_needed_chars = groups.iter().sum::<u32>() as usize + groups.len() - 1;
     let first_group = groups[0] as usize;
     let mut arrangement_count = 0;
-    for starting_idx in 0..=(springs.len() - min_needed_chars) {
+    for starting_idx in 0..=(springs.len() as i32 - min_needed_chars as i32) {
+        let starting_idx = starting_idx as usize;
         let can_fit_group_at_start_idx = springs[starting_idx..=(starting_idx + first_group - 1)]
             .iter()
             .all(|c| *c != '.');
-            dbg!(can_fit_group_at_start_idx);
         let group_can_end_after = springs.len() <= starting_idx + first_group
             || springs[starting_idx + first_group] != '#';
-            dbg!(group_can_end_after);
         if can_fit_group_at_start_idx && group_can_end_after {
             if groups.len() == 1 {
-                arrangement_count += 1;
+                let is_valid = springs.len() <= starting_idx + first_group + 1
+                    || springs[starting_idx + first_group + 1..]
+                        .iter()
+                        .all(|c| *c != '#');
+
+                if is_valid {
+                    arrangement_count += 1;
+                }
             } else {
                 let reduced_springs = &springs[starting_idx + first_group + 1..];
                 let reduced_groups = &groups[1..];
-                dbg!("Entering recursion level");
-                arrangement_count += count_possible_arrangements(reduced_springs, reduced_groups);
-                dbg!("Leaving recursion level with value");
+
+                let broken_springs_reduced = reduced_springs.iter().filter(|c| **c == '#').count();
+                let total_group_count_reduced: u32 = reduced_groups.iter().sum();
+                let can_cover_remaining_broken_springs =
+                    (total_group_count_reduced as usize) >= broken_springs_reduced;
+                //^ if this is false, the groups now left can not account for all confirmed broken springs that remain. This can not be a valid configuration
+                if can_cover_remaining_broken_springs {
+                    arrangement_count += count_possible_arrangements(
+                        reduced_springs.to_vec(),
+                        reduced_groups.to_vec(),
+                    );
+                }
             }
+        }
+        if springs[starting_idx] == '#' {
+            // the group must start here or earlier, no need to continue searching
+            break;
         }
     }
     arrangement_count
